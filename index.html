@@ -1,0 +1,2079 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Вейп симулятор</title>
+    <link rel="stylesheet" type="text/css" href="style.css">
+    <!-- Добавляем иконки Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .market-window {
+            background: #1a1a1a;
+            border-radius: 10px;
+            width: 90%;
+            max-width: 600px;
+            max-height: 80vh;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+        }
+
+        .market-content {
+            padding: 20px;
+            overflow-y: auto;
+            flex-grow: 1;
+            position: relative;
+        }
+
+        .listing-container {
+            position: relative;
+            padding: 0 50px;
+            margin: 20px 0;
+        }
+
+        .nav-button {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 10;
+            transition: all 0.3s ease;
+        }
+
+        .nav-button:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-50%) scale(1.1);
+        }
+
+        .nav-button.prev {
+            left: 10px;
+        }
+
+        .nav-button.next {
+            right: 10px;
+        }
+
+        .nav-button i {
+            color: white;
+            font-size: 20px;
+            text-shadow: 0 0 5px rgba(0,0,0,0.5);
+        }
+
+        .listing {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            padding: 20px;
+            margin: 0 auto;
+            max-width: 500px;
+        }
+
+        /* Добавляем стили для секретного чата */
+        .secret-chat {
+            display: none;
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 300px;
+            background: rgba(0, 0, 0, 0.9);
+            border: 1px solid #333;
+            border-radius: 8px;
+            z-index: 9999;
+            padding: 10px;
+            color: #0f0;
+            font-family: monospace;
+        }
+
+        .secret-chat-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            padding-bottom: 5px;
+            border-bottom: 1px solid #333;
+        }
+
+        .secret-chat-header h3 {
+            margin: 0;
+            color: #0f0;
+            font-size: 14px;
+        }
+
+        .secret-chat-close {
+            background: none;
+            border: none;
+            color: #0f0;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        .secret-chat-input {
+            width: 100%;
+            background: #000;
+            border: 1px solid #333;
+            color: #0f0;
+            padding: 5px;
+            font-family: monospace;
+        }
+
+        .secret-chat-input:focus {
+            outline: none;
+            border-color: #0f0;
+        }
+
+        /* Стили для аксессуаров */
+        .accessories-section {
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+        }
+
+        .accessories-section h3 {
+            margin: 0 0 15px 0;
+            color: #fff;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .accessory-item {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 10px;
+            margin-bottom: 10px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 6px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .accessory-item.installed {
+            border-color: #4CAF50;
+            background: rgba(76, 175, 80, 0.1);
+        }
+
+        .accessory-image {
+            width: 40px;
+            height: 40px;
+            border-radius: 6px;
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+
+        .accessory-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .accessory-info {
+            flex-grow: 1;
+        }
+
+        .accessory-info h4 {
+            margin: 0 0 5px 0;
+            color: #fff;
+            font-size: 14px;
+        }
+
+        .accessory-info p {
+            margin: 0;
+            font-size: 12px;
+            color: #999;
+        }
+    </style>
+</head>
+<body>
+    <!-- Экран загрузки -->
+    <div class="loading-screen" id="loadingScreen">
+        <div class="loading-content">
+            <h1>Загрузка...</h1>
+            <div class="loading-bar">
+                <div class="loading-progress" id="loadingProgress"></div>
+    </div>
+            <div class="loading-tips">
+                <i class="fas fa-exclamation-triangle"></i>
+                <p>Внимание! Берегите картридж!</p>
+                <p>Он может сгореть если в нем мало жижи:</p>
+                <ul>
+                    <li>При 1.0-0.50 мл: сгорит после 50 затяжек</li>
+                    <li>При 0.50-0.10 мл: сгорит после 10 затяжек</li>
+                    <li>При < 0.10 мл: сгорит после 3 затяжек</li>
+                </ul>
+                <p>Жижа утекает на 0.5 мл каждые 3 минуты!</p>
+    </div>
+        </div>
+    </div>
+
+    <!-- Кнопка инвентаря -->
+    <div class="inventory-button" onclick="toggleInventory()">
+        <i class="fas fa-briefcase"></i>
+    </div>
+
+    <!-- Кнопка барахолки -->
+    <div class="market-button" onclick="toggleMarket()">
+        <i class="fas fa-store"></i>
+        <span class="tooltip">Барахолка</span>
+    </div>
+
+    <!-- Кнопка казино -->
+    <div class="casino-button" onclick="toggleCasino()">
+        <i class="fas fa-dice"></i>
+        <span class="tooltip">Казино</span>
+    </div>
+
+    <!-- Окно барахолки -->
+    <div class="market-overlay" id="marketOverlay">
+        <div class="market-window">
+            <!-- Шапка -->
+            <div class="market-header">
+                <i class="fas fa-shopping-bag"></i>
+                <span>Вейп шоп</span>
+                <button class="close-market" onclick="toggleMarket()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <!-- Контент барахолки -->
+            <div class="market-content">
+                <div class="listing-container">
+                    <!-- Кнопка "Предыдущее" -->
+                    <button class="nav-button prev" onclick="prevListing()">
+                        <i class="fas fa-chevron-left"></i>
+                    </button>
+
+                    <!-- Объявление -->
+                    <div class="listing" id="currentListing">
+                        <!-- Содержимое объявления будет добавляться динамически -->
+                    </div>
+
+                    <!-- Кнопка "Следующее" -->
+                    <button class="nav-button next" onclick="nextListing()">
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+                </div>
+
+                <!-- Кнопка покупки -->
+                <button class="buy-button" onclick="buyItem()">
+                    <i class="fas fa-shopping-cart"></i>
+                    Купить
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Окно казино -->
+    <div class="casino-overlay" id="casinoOverlay">
+        <div class="casino-window">
+            <!-- Шапка -->
+            <div class="casino-header">
+                <i class="fas fa-dice"></i>
+                <span>Казино</span>
+                <button class="close-casino" onclick="toggleCasino()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <!-- Контент казино -->
+            <div class="casino-content">
+                <!-- Игры -->
+                <div class="casino-games">
+                    <!-- Сапёр -->
+                    <div class="game-card" onclick="startMinesweeper()">
+                        <div class="game-icon">
+                            <i class="fas fa-bomb"></i>
+                        </div>
+                        <h3>Сапёр</h3>
+                        <p>Выбери безопасные клетки</p>
+                    </div>
+
+                    <!-- Слоты -->
+                    <div class="game-card" onclick="startSlots()">
+                        <div class="game-icon">
+                            <i class="fas fa-dice-three" style="color: #000; font-size: 18px;"></i>
+                        </div>
+                        <h3>Слоты</h3>
+                        <p>Испытай удачу</p>
+                    </div>
+
+                    <!-- Ставки -->
+                    <div class="game-card" onclick="startBetting()">
+                        <div class="game-icon">
+                            <i class="fas fa-coins"></i>
+                        </div>
+                        <h3>Ставки</h3>
+                        <p>Сделай свою ставку</p>
+                    </div>
+                </div>
+
+                <!-- Игровое поле -->
+                <div class="game-field" id="gameField" style="display: none;">
+                    <!-- Сапёр -->
+                    <div id="minesweeperGame" style="display: none;">
+                        <div class="game-header">
+                            <h3><i class="fas fa-bomb"></i> Сапёр</h3>
+                        </div>
+                        <div class="game-controls">
+                            <div class="input-group">
+                                <label for="minesBet">Ставка:</label>
+                                <input type="number" id="minesBet" placeholder="Ставка" min="1">
+                            </div>
+                            <div class="input-group">
+                                <label for="minesCount">Мины:</label>
+                                <input type="number" id="minesCount" placeholder="1-24" min="1" max="24">
+                            </div>
+                            <button onclick="startMinesweeperGame()">
+                                <i class="fas fa-play"></i> Начать игру
+                            </button>
+                        </div>
+                        <div class="mines-info">
+                            <div class="current-multiplier">
+                                Текущий множитель: <span id="currentMultiplier">0x</span>
+                            </div>
+                            <div class="potential-win">
+                                Возможный выигрыш: <span id="potentialWin">0 ₽</span>
+                            </div>
+                            <button class="collect-button" onclick="collectMinesWin()" disabled>
+                                <i class="fas fa-coins"></i> Забрать
+                            </button>
+                        </div>
+                        <div class="mines-grid" id="minesGrid"></div>
+                    </div>
+
+                    <!-- Слоты -->
+                    <div id="slotsGame" style="display: none;">
+                        <div class="game-header">
+                            <h3><i class="fas fa-slot-machine"></i> Слоты</h3>
+                        </div>
+                        <div class="game-controls">
+                            <div class="input-group">
+                                <label for="slotsBet">Ваша ставка:</label>
+                                <input type="number" id="slotsBet" placeholder="Введите ставку" min="1">
+                            </div>
+                            <button onclick="spinSlots()">
+                                <i class="fas fa-sync-alt"></i> Крутить
+                            </button>
+                        </div>
+                        <div class="slots-display">
+                            <div class="slot" id="slot1">
+                                <span style="color: #FFD700; font-weight: bold;">7</span>
+                            </div>
+                            <div class="slot" id="slot2">
+                                <span style="color: #FFD700; font-weight: bold;">7</span>
+                            </div>
+                            <div class="slot" id="slot3">
+                                <span style="color: #FFD700; font-weight: bold;">7</span>
+                            </div>
+                        </div>
+                        <div class="slots-info">
+                            <div class="combo-item">
+                                <span class="combo">
+                                    <i class="fas fa-crown" style="color: #FFD700;"></i>
+                                    777 - Джекпот
+                                </span>
+                                <span class="multiplier">x7</span>
+                            </div>
+                            <div class="combo-item">
+                                <span class="combo">
+                                    <i class="fas fa-star" style="color: #FFC107;"></i>
+                                    Три одинаковых
+                                </span>
+                                <span class="multiplier">x3</span>
+                            </div>
+                            <div class="combo-item">
+                                <span class="combo">
+                                    <i class="fas fa-gem" style="color: #2196F3;"></i>
+                                    Два одинаковых
+                                </span>
+                                <span class="multiplier">x1.5</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Ставки -->
+                    <div id="bettingGame" style="display: none;">
+                        <div class="game-header">
+                            <h3><i class="fas fa-coins"></i> Ставки</h3>
+                        </div>
+                        <div class="game-controls">
+                            <div class="input-group">
+                                <label for="betAmount">Ставка:</label>
+                                <input type="number" id="betAmount" placeholder="Ставка" min="1">
+                            </div>
+                            <div class="input-group">
+                                <label for="betMultiplier">Множитель:</label>
+                                <select id="betMultiplier">
+                                    <option value="2">x2 (50%)</option>
+                                    <option value="3">x3 (33%)</option>
+                                    <option value="5">x5 (20%)</option>
+                                    <option value="10">x10 (10%)</option>
+                                </select>
+                            </div>
+                            <button onclick="placeBet()">
+                                <i class="fas fa-dice"></i> Сделать ставку
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Верхняя панель с балансом -->
+    <div class="top-controls">
+        <div id="score">0.00 ₽</div>
+    </div>
+
+    <!-- Крыса -->
+    <button id="rat" onclick="clickRat()"></button>
+
+    <!-- Нижняя панель с опытом, жижей и зарядом -->
+    <div class="bottom-bar">
+        <div class="exp-text">Уровень: <span id="level">0</span> | EXP: <span id="exp">0</span>/<span id="maxExp">100</span></div>
+        <div class="progress-bar-container">
+            <div class="progress-bar" id="progressBar"></div>
+        </div>
+        
+        <div class="liquid-text">Жижа: <span id="liquid">2.0</span>/<span id="maxLiquid">2.0</span> мл</div>
+        <div class="liquid-bar-container">
+            <div class="liquid-bar" id="liquidBar"></div>
+    </div>
+
+        <div class="battery-container">
+            <div class="battery-text">Заряд: <span id="battery">300</span>/<span id="maxBattery">300</span> mAh</div>
+            <div class="battery-bar-container">
+                <div class="battery-bar" id="batteryBar"></div>
+    </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно -->
+    <div class="modal-overlay" id="modalOverlay">
+        <div class="modal" id="modal">
+            <div class="modal-content">
+                <div class="modal-title">Поздравляем!</div>
+                <div class="modal-text" id="modalText"></div>
+                <button class="modal-button" onclick="closeModal()">Продолжить</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Окно инвентаря -->
+    <div class="inventory-overlay" id="inventoryOverlay">
+        <div class="inventory-window">
+            <!-- Шапка -->
+            <div class="inventory-header">
+                <i class="fas fa-briefcase"></i>
+                <span>Карман</span>
+                <button class="close-inventory" onclick="toggleInventory()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <!-- Контент инвентаря -->
+            <div class="inventory-content">
+                <!-- Жижа -->
+                <div class="juice-item">
+                    <div class="juice-image">
+                        <img src="img/5.png" alt="Жижа">
+                    </div>
+                    <div class="juice-info">
+                        <div class="juice-level">
+                            <div class="juice-level-fill" id="juiceLevelFill"></div>
+                        </div>
+                        <button class="use-juice" onclick="useJuice()">Залить</button>
+                    </div>
+                </div>
+
+                <!-- Запасной картридж -->
+                <div class="spare-coil-item">
+                    <div class="spare-coil-image">
+                        <img src="img/smoant-Battlestar-coil-Australia.jpeg" alt="Запасной картридж">
+                    </div>
+                    <div class="spare-coil-info">
+                        <h3>Запасной картридж (<span id="spareCoilCount">1</span>)</h3>
+                        <button class="use-coil" onclick="useSpareCoil()" id="spareCoilButton">Заменить</button>
+                    </div>
+                </div>
+
+                <!-- Аксессуары -->
+                <div class="accessories-section">
+                    <h3><i class="fas fa-puzzle-piece"></i> Аксессуары</h3>
+                    
+                    <!-- Расширенный бак -->
+                    <div class="accessory-item" id="liquidAccessory">
+                        <div class="accessory-image">
+                            <img src="img/juice3.png" alt="Расширенный бак">
+                        </div>
+                        <div class="accessory-info">
+                            <h4>Расширенный бак</h4>
+                            <p id="liquidAccessoryStatus">Не установлен</p>
+                        </div>
+                    </div>
+
+                    <!-- Аккумуляторы -->
+                    <div class="accessory-item" id="batteryAccessory">
+                        <div class="accessory-image">
+                            <img src="img/juice3.png" alt="Аккумуляторы">
+                        </div>
+                        <div class="accessory-info">
+                            <h4>Мощные аккумуляторы</h4>
+                            <p id="batteryAccessoryStatus">Не установлены</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Добавляем секретный чат -->
+    <div class="secret-chat" id="secretChat">
+        <div class="secret-chat-header">
+            <h3>Debug Console</h3>
+            <button class="secret-chat-close" onclick="closeSecretChat()">×</button>
+        </div>
+        <input type="text" class="secret-chat-input" id="secretChatInput" placeholder="Enter command..." onkeypress="handleSecretCommand(event)">
+    </div>
+
+    <script>
+    var score = 0;
+    var exp = 0;
+    var ratLevel = 0;
+    var baseClickValue = 0.25;
+    var baseExpRequired = 100;
+    var battery = 300;
+    var maxBattery = 300;
+    var liquid = 2.0;
+    var maxLiquid = 2.0;
+    var batteryPerClick = 2;
+    var liquidPerClick = 0.01;
+    var clickCounter = 0;
+    var clicksPerLiquidUse = 3;
+    var isCharging = false;
+    var inventoryJuice = 30.0; // Объем жижи в инвентаре (30 мл)
+    var maxInventoryJuice = 30.0; // Максимальный объем жижи в инвентаре
+
+    // Добавляем переменные для системы испарителя
+    var coilHealth = 100; // Здоровье испарителя
+    var coilBurned = false; // Флаг сгоревшего испарителя
+    var dryHitCount = 0; // Счетчик парения без жижи
+
+    // Добавляем переменную для запасного картриджа
+    var spareCoilCount = 1;
+
+    // Добавляем переменные для секретного чата
+    let liquidClickCount = 0;
+    let tempScore = 0; // Временный счет для чит-кода
+
+    // Добавляем переменную для текущего устройства
+    var currentDevice = {
+        name: "Smoant Vikii",
+        image: "img/juice1.png" // Начальное устройство
+    };
+
+    // Добавляем переменные для аксессуаров
+    var installedAccessories = {
+        liquid: null, // Расширенный бак
+        battery: null // Аккумуляторы
+    };
+
+    // Данные для объявлений
+    const listings = [
+        {
+            title: "Smoant Charon Baby Pod Kit",
+            description: "Компактный под с батареей 750 mAh и баком 2 мл",
+            price: 1000,
+            image: "img/33.png",
+            type: "device",
+            specs: {
+                battery: 750,
+                liquid: 2.0
+            }
+        },
+        {
+            title: "GeekVape Aegis Hero 2",
+            description: "Защищенный под-мод с батареей 1400 mAh и баком 4 мл. Корпус из металла с эко-кожей, защита IP67.",
+            price: 3000,
+            image: "img/45.png",
+            type: "device",
+            specs: {
+                battery: 1400,
+                liquid: 4.0
+            }
+        },
+        {
+            title: "Geek Vape Aegis Legend III",
+            description: "Мощный мод 200W с защитой IP68, работает от 2x18650. Бак 5.5 мл, быстрая зарядка USB-C.",
+            price: 8000,
+            image: "img/juice3.png",
+            type: "device",
+            specs: {
+                battery: 3000,
+                liquid: 5.5
+            }
+        },
+        {
+            title: "Расширенный бак для Legend III",
+            description: "Увеличенный бак на 10 мл для GeekVape Aegis Legend III. Совместим только с Legend III.",
+            price: 1500,
+            image: "img/juice3.png",
+            type: "accessory",
+            compatibility: ["Aegis Legend III"],
+            effect: {
+                type: "liquid",
+                value: 10.0
+            }
+        },
+        {
+            title: "Аккумуляторы 2x8000 mAh",
+            description: "Мощные аккумуляторы для GeekVape Aegis Legend III. Совместимы только с Legend III.",
+            price: 2500,
+            image: "img/juice3.png",
+            type: "accessory",
+            compatibility: ["Aegis Legend III"],
+            effect: {
+                type: "battery",
+                value: 8000
+            }
+        },
+        {
+            title: "Картридж Vikii Pod",
+            description: "Сменный картридж для Smoant Vikii Pod Kit. Сопротивление 1.2 Ом, объем 2 мл.",
+            price: 300,
+            image: "img/smoant-Battlestar-coil-Australia.jpeg",
+            type: "coil",
+            compatibility: ["Vikii Pod"]
+        },
+        {
+            title: "Испаритель Charon Baby",
+            description: "Сменный испаритель для Smoant Charon Baby",
+            price: 300,
+            image: "img/smoant-Battlestar-coil-Australia.jpeg",
+            type: "coil",
+            compatibility: ["Charon Baby"]
+        },
+        {
+            title: "Испаритель Aegis Hero",
+            description: "Сменный испаритель для GeekVape Aegis Hero 2",
+            price: 400,
+            image: "img/smoant-Battlestar-coil-Australia.jpeg",
+            type: "coil",
+            compatibility: ["Aegis Hero 2"]
+        },
+        {
+            title: "Испаритель Z",
+            description: "Сменный испаритель для GeekVape Aegis Legend III",
+            price: 500,
+            image: "img/smoant-Battlestar-coil-Australia.jpeg",
+            type: "coil",
+            compatibility: ["Aegis Legend III"]
+        },
+        {
+            title: "Жижа Bubble Gum",
+            description: "Вкус сочной жвачки, 30мл",
+            price: 100,
+            image: "img/2.png",
+            type: "juice"
+        },
+        {
+            title: "Жижа Berry Mix",
+            description: "Микс лесных ягод, 30мл",
+            price: 120,
+            image: "img/2.png",
+            type: "juice"
+        },
+        {
+            title: "Жижа Ice Mint",
+            description: "Освежающая мята, 30мл",
+            price: 90,
+            image: "img/2.png",
+            type: "juice"
+        }
+    ];
+
+    let currentListingIndex = 0;
+
+    // Функция для открытия/закрытия барахолки
+    function toggleMarket() {
+        const overlay = document.getElementById('marketOverlay');
+        if (overlay.style.display === 'flex') {
+            overlay.style.opacity = '0';
+            setTimeout(() => overlay.style.display = 'none', 300);
+        } else {
+            overlay.style.display = 'flex';
+            setTimeout(() => overlay.style.opacity = '1', 10);
+            updateListing();
+        }
+    }
+
+    // Функция для обновления отображения объявления
+    function updateListing() {
+        const listing = listings[currentListingIndex];
+        const listingElement = document.getElementById('currentListing');
+        
+        let content = `
+            <div class="listing-image ${listing.type === 'coil' ? 'coil-image' : ''}">
+                ${listing.type !== 'coil' && listing.image ? 
+                    `<img src="${listing.image}" alt="${listing.title}">` : 
+                    '<div class="coil-glow"></div>'}
+            </div>
+            <div class="listing-info">
+                <h3><i class="fas fa-${listing.type === 'coil' ? 'bolt' : listing.type === 'juice' ? 'tint' : listing.type === 'accessory' ? 'puzzle-piece' : 'box'} "></i>${listing.title}</h3>
+                <p>${listing.description}</p>`;
+
+        if (listing.type === "device") {
+            content += `
+                <div class="specs">
+                    <p><i class="fas fa-battery-full"></i> ${listing.specs.battery} mAh</p>
+                    <p><i class="fas fa-tint"></i> ${listing.specs.liquid} мл</p>
+                </div>`;
+        } else if (listing.type === "coil") {
+            content += `
+                <div class="specs">
+                    <p><i class="fas fa-bolt"></i> Новый испаритель</p>
+                    <p><i class="fas fa-check-circle"></i> Совместимость: ${listing.compatibility.join(", ")}</p>
+                </div>`;
+        } else if (listing.type === "accessory") {
+            const isCompatible = listing.compatibility.includes(currentDevice.name);
+            const isInstalled = (listing.effect.type === "liquid" && installedAccessories.liquid === listing.title) ||
+                               (listing.effect.type === "battery" && installedAccessories.battery === listing.title);
+            
+            content += `
+                <div class="specs">
+                    <p><i class="fas fa-${listing.effect.type === 'liquid' ? 'tint' : 'battery-full'}"></i> ${listing.effect.type === 'liquid' ? 'Объем: ' + listing.effect.value + ' мл' : 'Батарея: ' + listing.effect.value + ' mAh'}</p>
+                    <p><i class="fas fa-${isCompatible ? 'check-circle' : 'times-circle'}" style="color: ${isCompatible ? '#4CAF50' : '#f44336'}"></i> Совместимость: ${listing.compatibility.join(", ")}</p>
+                    ${isInstalled ? '<p><i class="fas fa-check" style="color: #4CAF50;"></i> Установлен</p>' : ''}
+                </div>`;
+        }
+
+        content += `
+                <div class="listing-price">
+                    <i class="fas fa-coins"></i>
+                    ${listing.price} ₽
+                </div>
+            </div>`;
+
+        listingElement.innerHTML = content;
+
+        // Обновляем текст на кнопке покупки
+        const buyButton = document.querySelector('.buy-button');
+        if (listing.type === "juice") {
+            buyButton.innerHTML = '<i class="fas fa-shopping-cart"></i>Купить жижу';
+        } else if (listing.type === "device") {
+            buyButton.innerHTML = '<i class="fas fa-shopping-cart"></i>Купить устройство';
+        } else if (listing.type === "accessory") {
+            const isCompatible = listing.compatibility.includes(currentDevice.name);
+            const isInstalled = (listing.effect.type === "liquid" && installedAccessories.liquid === listing.title) ||
+                               (listing.effect.type === "battery" && installedAccessories.battery === listing.title);
+            
+            if (!isCompatible) {
+                buyButton.innerHTML = '<i class="fas fa-times"></i>Несовместимо';
+                buyButton.disabled = true;
+            } else if (isInstalled) {
+                buyButton.innerHTML = '<i class="fas fa-check"></i>Установлен';
+                buyButton.disabled = true;
+            } else {
+                buyButton.innerHTML = '<i class="fas fa-shopping-cart"></i>Купить аксессуар';
+                buyButton.disabled = false;
+            }
+        } else {
+            buyButton.innerHTML = '<i class="fas fa-shopping-cart"></i>Купить испаритель';
+        }
+    }
+
+    // Функция для перехода к следующему объявлению
+    function nextListing() {
+        currentListingIndex = (currentListingIndex + 1) % listings.length;
+        updateListing();
+    }
+
+    // Функция для перехода к предыдущему объявлению
+    function prevListing() {
+        currentListingIndex = (currentListingIndex - 1 + listings.length) % listings.length;
+        updateListing();
+    }
+
+    // Функция для покупки товара
+    function buyItem() {
+        const listing = listings[currentListingIndex];
+        if (score >= listing.price) {
+            score -= listing.price;
+            
+            if (listing.type === "juice") {
+                inventoryJuice = Math.min(maxInventoryJuice, inventoryJuice + 30.0);
+                showModal(
+                    'Покупка успешна!',
+                    `<p style="font-size: 18px; margin-bottom: 20px;">Вы купили ${listing.title}!</p>` +
+                    `<p style="color: #4CAF50;">Во флаконе: ${inventoryJuice.toFixed(2)} мл</p>`
+                );
+                updateJuiceLevel();
+            } else if (listing.type === "device") {
+                // Обновляем характеристики устройства
+                maxBattery = listing.specs.battery;
+                battery = maxBattery;
+                maxLiquid = listing.specs.liquid;
+                liquid = maxLiquid;
+                
+                // Обновляем текущее устройство
+                currentDevice = {
+                    name: listing.title,
+                    image: listing.image
+                };
+                
+                // Сбрасываем аксессуары при смене устройства
+                installedAccessories = {
+                    liquid: null,
+                    battery: null
+                };
+                
+                // Обновляем картинку устройства
+                document.getElementById('rat').style.backgroundImage = `url('${currentDevice.image}')`;
+                
+                showModal(
+                    'Устройство обновлено!',
+                    `<p style="font-size: 18px; margin-bottom: 20px;">Вы купили ${listing.title}!</p>` +
+                    `<p style="color: #4CAF50;">Новые характеристики:</p>` +
+                    `<p style="color: #2196F3;">Батарея: ${maxBattery} mAh</p>` +
+                    `<p style="color: #2196F3;">Объем бака: ${maxLiquid} мл</p>`
+                );
+                
+                // Обновляем отображение новых характеристик
+                document.getElementById('maxBattery').textContent = maxBattery;
+                document.getElementById('battery').textContent = battery;
+                document.getElementById('maxLiquid').textContent = maxLiquid.toFixed(1);
+                document.getElementById('liquid').textContent = liquid.toFixed(2);
+                
+                // Сбрасываем состояние испарителя для нового устройства
+                coilHealth = 100;
+                coilBurned = false;
+                dryHitCount = 0;
+                
+                updateDisplay();
+                updateAccessoriesDisplay();
+                saveGameData();
+            } else if (listing.type === "accessory") {
+                // Проверяем совместимость
+                if (!listing.compatibility.includes(currentDevice.name)) {
+                    showModal(
+                        'Несовместимость!',
+                        `<p style="font-size: 18px; margin-bottom: 20px;">Этот аксессуар не подходит к вашему устройству!</p>` +
+                        `<p style="color: #f44336;">Требуется: ${listing.compatibility.join(", ")}</p>`
+                    );
+                    score += listing.price; // Возвращаем деньги
+                    return;
+                }
+                
+                // Применяем эффект аксессуара
+                if (listing.effect.type === "liquid") {
+                    installedAccessories.liquid = listing.title;
+                    maxLiquid = listing.effect.value;
+                    liquid = maxLiquid; // Заполняем бак при установке
+                    showModal(
+                        'Аксессуар установлен!',
+                        `<p style="font-size: 18px; margin-bottom: 20px;">Установлен расширенный бак!</p>` +
+                        `<p style="color: #4CAF50;">Новый объем: ${maxLiquid} мл</p>` +
+                        `<p style="color: #2196F3;">Бак заполнен до максимума</p>`
+                    );
+                } else if (listing.effect.type === "battery") {
+                    installedAccessories.battery = listing.title;
+                    maxBattery = listing.effect.value;
+                    battery = maxBattery; // Заряжаем при установке
+                    showModal(
+                        'Аксессуар установлен!',
+                        `<p style="font-size: 18px; margin-bottom: 20px;">Установлены мощные аккумуляторы!</p>` +
+                        `<p style="color: #4CAF50;">Новая емкость: ${maxBattery} mAh</p>` +
+                        `<p style="color: #2196F3;">Батарея заряжена на 100%</p>`
+                    );
+                }
+                
+                // Обновляем отображение
+                document.getElementById('maxBattery').textContent = maxBattery;
+                document.getElementById('battery').textContent = battery;
+                document.getElementById('maxLiquid').textContent = maxLiquid.toFixed(1);
+                document.getElementById('liquid').textContent = liquid.toFixed(2);
+                
+                updateDisplay();
+                updateAccessoriesDisplay();
+                saveGameData();
+            } else if (listing.type === "coil") {
+                coilHealth = 100;
+                coilBurned = false;
+                dryHitCount = 0;
+                showModal(
+                    'Испаритель заменен!',
+                    `<p style="font-size: 18px; margin-bottom: 20px;">Вы установили новый испаритель!</p>` +
+                    `<p style="color: #4CAF50;">Состояние: 100%</p>`
+                );
+            }
+            
+            updateDisplay();
+            saveGameData();
+        } else {
+            showModal(
+                'Недостаточно средств!',
+                `<p style="font-size: 18px; margin-bottom: 20px;">Необходимо ${listing.price} ₽</p>` +
+                `<p style="color: #f44336;">У вас только ${score.toFixed(2)} ₽</p>`
+            );
+        }
+    }
+
+    function getMaxEnergy(level) {
+        return maxBattery;
+    }
+
+    function showModal(title, text) {
+        const modal = document.getElementById('modal');
+        const overlay = document.getElementById('modalOverlay');
+        const modalTitle = modal.querySelector('.modal-title');
+        const modalText = document.getElementById('modalText');
+
+        modalTitle.textContent = title;
+        modalText.innerHTML = text;
+        overlay.style.display = 'flex';
+        setTimeout(() => modal.classList.add('show'), 10);
+    }
+
+    function closeModal() {
+        const modal = document.getElementById('modal');
+        const overlay = document.getElementById('modalOverlay');
+        
+        modal.classList.remove('show');
+        setTimeout(() => {
+            overlay.style.display = 'none';
+        }, 300);
+    }
+
+    function startCharging() {
+        if (!isCharging && battery < maxBattery) {
+            isCharging = true;
+            document.querySelector('.charge-button').classList.add('charging');
+            document.querySelector('.charge-button').textContent = 'Заряжается...';
+        }
+    }
+
+    function clickRat() {
+        // Проверяем уровень жижи и считаем тыки до сгорания
+        if (liquid > 0 && liquid <= 1.0) {
+            dryHitCount++;
+            let maxHits;
+            
+            if (liquid > 0.50) {
+                maxHits = 50; // 1.0-0.50 мл: 50 тыков
+            } else if (liquid > 0.10) {
+                maxHits = 10; // 0.50-0.10 мл: 10 тыков
+            } else {
+                maxHits = 3;  // <0.10 мл: 3 тыка
+            }
+            
+            if (dryHitCount >= maxHits) {
+                coilBurned = true;
+                showModal(
+                    'Испаритель сгорел!',
+                    '<p style="font-size: 18px; margin-bottom: 20px;">Вы сожгли испаритель!</p>' +
+                    '<p style="color: #f44336;">Необходимо купить новый в барахолке</p>'
+                );
+                return;
+            }
+        } else {
+            dryHitCount = 0;
+        }
+
+        if (coilBurned) {
+            showModal(
+                'Испаритель сгорел!',
+                '<p style="font-size: 18px; margin-bottom: 20px;">Необходимо заменить испаритель!</p>' +
+                '<p style="color: #f44336;">Посетите барахолку для покупки нового</p>'
+            );
+            return;
+        }
+
+        if (battery >= batteryPerClick && liquid >= liquidPerClick) {
+            var clickReward = baseClickValue * (ratLevel + 1);
+            score += clickReward;
+            exp += 1;
+            battery -= batteryPerClick;
+            
+            clickCounter++;
+            if (clickCounter >= clicksPerLiquidUse) {
+                liquid = Math.max(0, liquid - liquidPerClick);
+                clickCounter = 0;
+            }
+            
+            createPlusOneEffect(clickReward);
+            saveGameData();
+            updateDisplay();
+
+            if (liquid <= 0) {
+                showModal(
+                    'Жижа закончилась!',
+                    '<p style="font-size: 18px; margin-bottom: 20px;">Необходимо заправить жижу!</p>' +
+                    '<p style="color: #f44336;">Откройте карман для заправки</p>'
+                );
+            }
+        } else if (battery < batteryPerClick) {
+            showModal(
+                'Батарея разряжена!',
+                '<p style="font-size: 18px; margin-bottom: 20px;">Необходимо зарядить!</p>' +
+                '<p style="color: #cccccc;">Нажмите кнопку "Зарядить"</p>'
+            );
+        } else if (liquid < liquidPerClick) {
+            showModal(
+                'Жижа закончилась!',
+                '<p style="font-size: 18px; margin-bottom: 20px;">Необходимо заправить жижу!</p>' +
+                '<p style="color: #f44336;">Откройте карман для заправки</p>'
+            );
+        }
+    }
+
+    function createPlusOneEffect(amount) {
+        var plusOne = document.createElement('div');
+        plusOne.textContent = '+' + amount.toFixed(2) + ' ₽';
+        plusOne.classList.add('plus-one');
+        plusOne.style.top = (event.clientY - 20) + 'px';
+        plusOne.style.left = (event.clientX + 20) + 'px';
+        document.body.appendChild(plusOne);
+        setTimeout(function() {
+            document.body.removeChild(plusOne);
+        }, 1000);
+    }
+
+    function updateDisplay() {
+        document.getElementById('score').innerHTML = score.toFixed(2) + ' ₽';
+        document.getElementById('level').textContent = ratLevel;
+        document.getElementById('exp').textContent = exp;
+        document.getElementById('maxExp').textContent = getRequiredExp(ratLevel);
+        document.getElementById('battery').textContent = Math.round(battery);
+        document.getElementById('maxBattery').textContent = maxBattery;
+        document.getElementById('liquid').textContent = liquid.toFixed(2);
+        document.getElementById('maxLiquid').textContent = maxLiquid.toFixed(1);
+        
+        // Обновление прогресс-бара опыта
+        var requiredExp = getRequiredExp(ratLevel);
+        var progress = (exp / requiredExp) * 100;
+        document.getElementById('progressBar').style.width = progress + '%';
+        
+        // Обновление прогресс-бара батареи
+        var batteryProgress = (battery / maxBattery) * 100;
+        var batteryBar = document.getElementById('batteryBar');
+        var batteryText = document.querySelector('.battery-text');
+        
+        batteryBar.style.width = batteryProgress + '%';
+        
+        batteryBar.classList.remove('high', 'medium', 'low');
+        batteryText.classList.remove('high', 'medium', 'low');
+        
+        // Проверяем наличие кнопки зарядки
+        let chargeButton = document.querySelector('.charge-button');
+        
+        if (battery > 150) {
+            batteryBar.classList.add('high');
+            batteryText.classList.add('high');
+            // Удаляем кнопку если она есть
+            if (chargeButton) chargeButton.remove();
+        } else if (battery > 50) {
+            batteryBar.classList.add('medium');
+            batteryText.classList.add('medium');
+            // Удаляем кнопку если она есть
+            if (chargeButton) chargeButton.remove();
+        } else {
+            batteryBar.classList.add('low');
+            batteryText.classList.add('low');
+            
+            // Создаем кнопку зарядки если её нет
+            if (!chargeButton) {
+                chargeButton = document.createElement('button');
+                chargeButton.className = 'charge-button';
+                chargeButton.textContent = 'Зарядить';
+                chargeButton.onclick = startCharging;
+                document.querySelector('.battery-container').appendChild(chargeButton);
+            }
+        }
+
+        // Обновление прогресс-бара жижи
+        var liquidProgress = (liquid / maxLiquid) * 100;
+        document.getElementById('liquidBar').style.width = liquidProgress + '%';
+        
+        updateAccessoriesDisplay();
+        saveGameData();
+   }
+
+    function getRequiredExp(level) {
+        return baseExpRequired + (level * 100);
+    }
+
+        function saveGameData() {
+            localStorage.setItem('score', score);
+            localStorage.setItem('ratLevel', ratLevel);
+            localStorage.setItem('exp', exp);
+        localStorage.setItem('battery', battery);
+        localStorage.setItem('liquid', liquid);
+        localStorage.setItem('clickCounter', clickCounter);
+        localStorage.setItem('inventoryJuice', inventoryJuice);
+        localStorage.setItem('coilHealth', coilHealth);
+        localStorage.setItem('coilBurned', coilBurned);
+        localStorage.setItem('dryHitCount', dryHitCount);
+        localStorage.setItem('spareCoilCount', spareCoilCount);
+        localStorage.setItem('currentDevice', JSON.stringify(currentDevice));
+        localStorage.setItem('installedAccessories', JSON.stringify(installedAccessories));
+        localStorage.setItem('maxBattery', maxBattery);
+        localStorage.setItem('maxLiquid', maxLiquid);
+        }
+
+        function loadGameData() {
+        score = parseFloat(localStorage.getItem('score')) || 0;
+            ratLevel = parseInt(localStorage.getItem('ratLevel')) || 0;
+            exp = parseInt(localStorage.getItem('exp')) || 0;
+        battery = parseFloat(localStorage.getItem('battery')) || maxBattery;
+        liquid = parseFloat(localStorage.getItem('liquid')) || maxLiquid;
+        clickCounter = parseInt(localStorage.getItem('clickCounter')) || 0;
+        inventoryJuice = parseFloat(localStorage.getItem('inventoryJuice')) || maxInventoryJuice;
+        coilHealth = parseInt(localStorage.getItem('coilHealth')) || 100;
+        coilBurned = localStorage.getItem('coilBurned') === 'true';
+        dryHitCount = parseInt(localStorage.getItem('dryHitCount')) || 0;
+        spareCoilCount = parseInt(localStorage.getItem('spareCoilCount')) || 1;
+        
+        // Загружаем текущее устройство
+        const savedDevice = localStorage.getItem('currentDevice');
+        if (savedDevice) {
+            currentDevice = JSON.parse(savedDevice);
+            document.getElementById('rat').style.backgroundImage = `url('${currentDevice.image}')`;
+        }
+
+        // Загружаем аксессуары
+        const savedAccessories = localStorage.getItem('installedAccessories');
+        if (savedAccessories) {
+            installedAccessories = JSON.parse(savedAccessories);
+        }
+
+        // Загружаем характеристики устройства
+        const savedMaxBattery = localStorage.getItem('maxBattery');
+        if (savedMaxBattery) {
+            maxBattery = parseFloat(savedMaxBattery);
+        }
+
+        const savedMaxLiquid = localStorage.getItem('maxLiquid');
+        if (savedMaxLiquid) {
+            maxLiquid = parseFloat(savedMaxLiquid);
+        }
+
+        // Обновляем состояние кнопки запасного картриджа
+        if (spareCoilCount === 0) {
+            document.getElementById('spareCoilButton').classList.add('disabled');
+        }
+
+        const inventoryOpen = localStorage.getItem('inventoryOpen') === 'true';
+        const overlay = document.getElementById('inventoryOverlay');
+        if (inventoryOpen) {
+            overlay.style.display = 'flex';
+            overlay.style.opacity = '1';
+        } else {
+            overlay.style.display = 'none';
+            overlay.style.opacity = '0';
+        }
+        
+            updateDisplay();
+        updateJuiceLevel();
+        updateAccessoriesDisplay();
+    }
+
+    function checkLevelUp() {
+        var requiredExp = getRequiredExp(ratLevel);
+        if (exp >= requiredExp) {
+            ratLevel++;
+            exp -= requiredExp;
+            var nextLevelReward = (baseClickValue * (ratLevel + 1)).toFixed(2);
+            var nextLevelExp = getRequiredExp(ratLevel);
+            battery = maxBattery / 2;
+            
+            showModal(
+                'Новый уровень!',
+                '<p style="font-size: 18px; margin-bottom: 20px;">Вы достигли <b>' + ratLevel + ' уровня</b>!</p>' +
+                '<p style="color: #ffd700; font-size: 20px; margin-bottom: 20px;">Награда за тап увеличена до <b>' + nextLevelReward + ' ₽</b></p>' +
+                '<p style="color: #cccccc;">Следующий уровень через <b>' + nextLevelExp + '</b> тапов</p>'
+            );
+            
+                updateDisplay();
+            }
+        }
+
+    // Быстрая зарядка
+    setInterval(function() {
+        if (isCharging && battery < maxBattery) {
+            battery = Math.min(maxBattery, battery + 2);
+            updateDisplay();
+            if (battery >= maxBattery) {
+                isCharging = false;
+                document.querySelector('.charge-button').classList.remove('charging');
+                document.querySelector('.charge-button').textContent = 'Зарядить';
+            }
+        }
+    }, 100); // Обновление каждые 100мс
+
+    document.body.addEventListener('click', checkLevelUp);
+
+    // Загрузка данных при запуске
+    window.onload = function() {
+                loadGameData();
+        updateInventoryDisplay();
+        simulateLoading();
+    };
+
+    // Функция для открытия/закрытия инвентаря
+    function toggleInventory() {
+        const overlay = document.getElementById('inventoryOverlay');
+        if (overlay.style.display === 'flex' || overlay.style.display === '') {
+            overlay.style.opacity = '0';
+            setTimeout(() => {
+                overlay.style.display = 'none';
+                localStorage.setItem('inventoryOpen', 'false');
+            }, 300);
+        } else {
+            overlay.style.display = 'flex';
+            setTimeout(() => {
+                overlay.style.opacity = '1';
+                localStorage.setItem('inventoryOpen', 'true');
+            }, 10);
+            updateJuiceLevel();
+            updateAccessoriesDisplay();
+            updateInventoryDisplay();
+        }
+    }
+
+    // Функция для обновления уровня жижи в инвентаре
+    function updateJuiceLevel() {
+        const juiceLevelFill = document.getElementById('juiceLevelFill');
+        if (juiceLevelFill) {
+            const percentage = (inventoryJuice / maxInventoryJuice) * 100;
+            juiceLevelFill.style.width = percentage + '%';
+        }
+    }
+
+    // Функция для использования жижи из инвентаря
+    function useJuice() {
+        if (liquid < maxLiquid && inventoryJuice > 0) {
+            const neededAmount = maxLiquid - liquid; // Сколько нужно долить
+            if (inventoryJuice >= neededAmount) {
+                // Если в инвентаре достаточно жижи
+                liquid = maxLiquid;
+                inventoryJuice -= neededAmount;
+                updateDisplay();
+                updateJuiceLevel();
+                updateAccessoriesDisplay();
+                showModal(
+                    'Жижа заправлена!',
+                    '<p style="font-size: 18px; margin-bottom: 20px;">Бак успешно заправлен!</p>' +
+                    '<p style="color: #4CAF50;">Текущий объем бака: ' + maxLiquid + ' мл</p>' +
+                    '<p style="color: #2196F3;">Осталось в флаконе: ' + inventoryJuice.toFixed(2) + ' мл</p>'
+                );
+            } else {
+                // Если в инвентаре недостаточно жижи
+                liquid += inventoryJuice;
+                const added = inventoryJuice;
+                inventoryJuice = 0;
+                updateDisplay();
+                updateJuiceLevel();
+                updateAccessoriesDisplay();
+                showModal(
+                    'Жижа частично заправлена!',
+                    '<p style="font-size: 18px; margin-bottom: 20px;">Флакон пуст!</p>' +
+                    '<p style="color: #FFC107;">Удалось залить только ' + added.toFixed(2) + ' мл</p>' +
+                    '<p style="color: #2196F3;">Текущий объем бака: ' + liquid.toFixed(2) + ' мл</p>'
+                );
+            }
+            saveGameData(); // Сохраняем состояние после изменений
+        } else if (liquid >= maxLiquid) {
+            showModal(
+                'Бак полный!',
+                '<p style="font-size: 18px; margin-bottom: 20px;">Бак уже заправлен полностью!</p>' +
+                '<p style="color: #f44336;">Текущий объем: ' + liquid.toFixed(2) + ' мл</p>'
+            );
+        } else if (inventoryJuice <= 0) {
+            showModal(
+                'Флакон пуст!',
+                '<p style="font-size: 18px; margin-bottom: 20px;">Необходимо купить новую жижу!</p>' +
+                '<p style="color: #f44336;">Во флаконе: ' + inventoryJuice.toFixed(2) + ' мл</p>'
+            );
+        }
+    }
+
+    // Обновляем функцию утечки жижи
+    function leakLiquid() {
+        if (liquid > 0) {
+            liquid = Math.max(0, liquid - 0.5);
+            updateDisplay();
+        }
+    }
+
+    // Запускаем утечку жижи каждые 3 минуты (180000 мс)
+    setInterval(leakLiquid, 180000);
+
+    // Функция для использования запасного картриджа
+    function useSpareCoil() {
+        if (spareCoilCount > 0 && coilBurned) {
+            coilBurned = false;
+            dryHitCount = 0;
+            spareCoilCount--;
+            document.getElementById('spareCoilButton').classList.add('disabled');
+            showModal(
+                'Картридж заменен!',
+                '<p style="font-size: 18px; margin-bottom: 20px;">Вы установили запасной картридж!</p>' +
+                '<p style="color: #4CAF50;">Теперь можно продолжить парить</p>' +
+                '<p style="color: #f44336;">Запасной картридж использован</p>'
+            );
+        } else if (spareCoilCount === 0) {
+            showModal(
+                'Нет запасного картриджа!',
+                '<p style="font-size: 18px; margin-bottom: 20px;">У вас нет запасного картриджа!</p>' +
+                '<p style="color: #f44336;">Купите новый в барахолке</p>'
+            );
+            } else {
+            showModal(
+                'Картридж не сгорел!',
+                '<p style="font-size: 18px; margin-bottom: 20px;">Текущий картридж в порядке!</p>' +
+                '<p style="color: #4CAF50;">Замена не требуется</p>'
+            );
+        }
+        saveGameData();
+    }
+
+    // Функция для имитации загрузки
+    function simulateLoading() {
+        const loadingScreen = document.getElementById('loadingScreen');
+        const loadingProgress = document.getElementById('loadingProgress');
+        let progress = 0;
+
+        const interval = setInterval(() => {
+            progress += Math.random() * 30;
+            if (progress >= 100) {
+                progress = 100;
+                clearInterval(interval);
+                setTimeout(() => {
+                    loadingScreen.style.opacity = '0';
+                    setTimeout(() => {
+                        loadingScreen.style.display = 'none';
+                    }, 500);
+                }, 1000);
+            }
+            loadingProgress.style.width = progress + '%';
+        }, 500);
+    }
+
+    // Функции казино
+    function toggleCasino() {
+        const overlay = document.getElementById('casinoOverlay');
+        if (overlay.style.display === 'flex') {
+            overlay.style.opacity = '0';
+            setTimeout(() => overlay.style.display = 'none', 300);
+        } else {
+            overlay.style.display = 'flex';
+            setTimeout(() => overlay.style.opacity = '1', 10);
+        }
+    }
+
+    // Проверка ставки
+    function validateBet(bet) {
+        bet = parseInt(bet) || 0;
+        if (bet <= 0) {
+            showModal('Ошибка!', 'Введите корректную ставку!');
+            return false;
+        }
+        if (bet > score) {
+            showModal('Недостаточно средств!', 'У вас недостаточно денег для такой ставки!');
+            return false;
+        }
+        return bet;
+    }
+
+    // Сапёр
+    function startMinesweeper() {
+        document.getElementById('gameField').style.display = 'block';
+        document.getElementById('minesweeperGame').style.display = 'block';
+        document.getElementById('slotsGame').style.display = 'none';
+        document.getElementById('bettingGame').style.display = 'none';
+    }
+
+    let currentBet = 0;
+    let currentMines = 0;
+    let safeClicks = 0;
+    let gameActive = false;
+
+    function startMinesweeperGame() {
+        const bet = validateBet(document.getElementById('minesBet').value);
+        if (!bet) return;
+
+        const minesCount = parseInt(document.getElementById('minesCount').value) || 0;
+        if (minesCount < 1 || minesCount > 24) {
+            showModal('Ошибка!', 'Выберите от 1 до 24 мин!');
+            return;
+        }
+
+        currentBet = bet;
+        currentMines = minesCount;
+        safeClicks = 0;
+        gameActive = true;
+
+        score = Math.max(0, score - bet);
+             updateDisplay();
+
+        // Сбрасываем множители и отключаем кнопку
+        document.getElementById('currentMultiplier').textContent = '0x';
+        document.getElementById('potentialWin').textContent = '0 ₽';
+        document.querySelector('.collect-button').disabled = true;
+
+        // Создаем поле
+        const grid = document.getElementById('minesGrid');
+        grid.innerHTML = '';
+        const mines = [];
+
+        // Размещаем мины
+        while (mines.length < minesCount) {
+            const pos = Math.floor(Math.random() * 25);
+            if (!mines.includes(pos)) mines.push(pos);
+        }
+
+        // Создаем ячейки
+        for (let i = 0; i < 25; i++) {
+            const cell = document.createElement('div');
+            cell.className = 'mine-cell';
+            cell.dataset.index = i;
+            cell.onclick = () => checkCell(i, cell, mines, bet);
+            grid.appendChild(cell);
+        }
+    }
+
+    function checkCell(index, cell, mines, bet) {
+        if (!gameActive || cell.classList.contains('safe') || cell.classList.contains('mine')) return;
+
+        if (mines.includes(index)) {
+            // Взрыв
+            cell.classList.add('mine');
+            cell.innerHTML = '<i class="fas fa-bomb"></i>';
+            gameActive = false;
+            document.querySelector('.collect-button').disabled = true;
+            showModal('Бум!', 'Вы попали на мину и проиграли!');
+            revealMines(mines);
+                } else {
+            // Безопасная ячейка
+            cell.classList.add('safe');
+            cell.innerHTML = '<i class="fas fa-check"></i>';
+            safeClicks++;
+            
+            // Базовый множитель от количества мин
+            const baseMultiplier = currentMines * 0.1;
+            // Умножаем на количество открытых ячеек
+            const totalMultiplier = baseMultiplier * safeClicks;
+            
+            document.getElementById('currentMultiplier').textContent = totalMultiplier.toFixed(1) + 'x';
+            
+            // Рассчитываем выигрыш: ставка + (ставка * множитель)
+            const potentialWin = currentBet + (currentBet * totalMultiplier);
+            document.getElementById('potentialWin').textContent = potentialWin.toFixed(2) + ' ₽';
+            document.querySelector('.collect-button').disabled = false;
+        }
+    }
+
+    function collectMinesWin() {
+        if (!gameActive) return;
+
+        const multiplier = parseFloat(document.getElementById('currentMultiplier').textContent);
+        // Рассчитываем выигрыш: ставка + (ставка * множитель)
+        const win = Math.floor(currentBet + (currentBet * multiplier));
+        score = Math.max(0, score + win);
+                updateDisplay();
+        
+        gameActive = false;
+        document.querySelector('.collect-button').disabled = true;
+        
+        showModal('Победа! 🎰', 
+            `<div style="font-size: 20px; margin-bottom: 15px;">Вы забрали выигрыш!</div>
+             <div style="color: #4CAF50; font-size: 24px; margin-bottom: 15px;">+${win.toFixed(2)} ₽</div>
+             <div style="color: #FFD700; font-size: 18px;">Множитель: ${multiplier}x</div>`
+        );
+    }
+
+    function revealMines(mines) {
+        const cells = document.querySelectorAll('.mine-cell');
+        mines.forEach(index => {
+            cells[index].classList.add('mine');
+            cells[index].innerHTML = '<i class="fas fa-bomb"></i>';
+        });
+    }
+
+    // Слоты
+    function startSlots() {
+        document.getElementById('gameField').style.display = 'block';
+        document.getElementById('minesweeperGame').style.display = 'none';
+        document.getElementById('slotsGame').style.display = 'block';
+        document.getElementById('bettingGame').style.display = 'none';
+    }
+
+    function spinSlots() {
+        const bet = validateBet(document.getElementById('slotsBet').value);
+        if (!bet) return;
+
+        score = Math.max(0, score - bet);
+        updateDisplay();
+
+        const symbols = [
+            { symbol: '7', html: '<span style="color: #FFD700; font-size: 50px; font-weight: bold;">7</span>', weight: 2 },
+            { symbol: 'diamond', html: '<i class="fas fa-gem" style="color: #2196F3; font-size: 40px;"></i>', weight: 3 },
+            { symbol: 'crown', html: '<i class="fas fa-crown" style="color: #FFD700; font-size: 40px;"></i>', weight: 3 },
+            { symbol: 'star', html: '<i class="fas fa-star" style="color: #FFC107; font-size: 40px;"></i>', weight: 4 },
+            { symbol: 'cherry', html: '<i class="fas fa-apple-alt" style="color: #f44336; font-size: 40px;"></i>', weight: 3 },
+            { symbol: 'lemon', html: '<i class="fas fa-lemon" style="color: #FFEB3B; font-size: 40px;"></i>', weight: 3 },
+            { symbol: 'watermelon', html: '<i class="fas fa-apple-whole" style="color: #4CAF50; font-size: 40px;"></i>', weight: 3 },
+            { symbol: 'grapes', html: '<i class="fas fa-apple-whole" style="color: #9C27B0; font-size: 40px;"></i>', weight: 3 },
+            { symbol: 'bell', html: '<i class="fas fa-bell" style="color: #FF9800; font-size: 40px;"></i>', weight: 4 }
+        ];
+
+        const slots = [
+            document.getElementById('slot1'),
+            document.getElementById('slot2'),
+            document.getElementById('slot3')
+        ];
+
+        // Отключаем кнопку во время вращения
+        const spinButton = document.querySelector('#slotsGame button');
+        spinButton.disabled = true;
+        spinButton.style.opacity = '0.5';
+
+        slots.forEach(slot => {
+            slot.classList.add('spinning');
+            slot.innerHTML = symbols[0].html;
+        });
+
+        // Создаем взвешенный массив символов
+        let weightedSymbols = [];
+        symbols.forEach(symbol => {
+            for (let i = 0; i < symbol.weight; i++) {
+                weightedSymbols.push(symbol);
+            }
+        });
+
+        // Анимация вращения
+        let spins = 0;
+        const maxSpins = 20;
+        const interval = setInterval(() => {
+            slots.forEach(slot => {
+                const randomIndex = Math.floor(Math.random() * weightedSymbols.length);
+                slot.innerHTML = weightedSymbols[randomIndex].html;
+            });
+            spins++;
+            
+            if (spins >= maxSpins) {
+                clearInterval(interval);
+                slots.forEach(slot => slot.classList.remove('spinning'));
+                
+                // Включаем кнопку обратно
+                spinButton.disabled = false;
+                spinButton.style.opacity = '1';
+                
+                // Финальные символы
+                const finalSymbols = slots.map(() => {
+                    const randomIndex = Math.floor(Math.random() * weightedSymbols.length);
+                    return weightedSymbols[randomIndex];
+                });
+
+                // Отображаем финальные символы
+                slots.forEach((slot, index) => {
+                    slot.innerHTML = finalSymbols[index].html;
+                });
+                
+                checkSlotWin(bet, finalSymbols);
+            }
+        }, 100);
+    }
+
+    function checkSlotWin(bet, results) {
+        let multiplier = 0;
+        let message = '';
+        let color = '#FFD700';
+
+        // Проверяем комбинации
+        if (results.every(r => r.symbol === '7')) {
+            multiplier = 77;
+            message = '🎉 МЕГА ДЖЕКПОТ! Три семерки!';
+            color = '#FFD700';
+        } else if (results.every(r => r.symbol === 'diamond')) {
+            multiplier = 35;
+            message = '💎 КРУПНЫЙ ВЫИГРЫШ! Три алмаза!';
+            color = '#2196F3';
+        } else if (results.every(r => r.symbol === 'crown')) {
+            multiplier = 30;
+            message = '👑 БОЛЬШОЙ ВЫИГРЫШ! Три короны!';
+            color = '#FFD700';
+        } else if (results.every(r => r.symbol === 'star')) {
+            multiplier = 25;
+            message = '⭐ ОТЛИЧНЫЙ ВЫИГРЫШ! Три звезды!';
+            color = '#FFC107';
+        } else if (results.every(r => r.symbol === 'bell')) {
+            multiplier = 20;
+            message = '🔔 ХОРОШИЙ ВЫИГРЫШ! Три колокольчика!';
+            color = '#FF9800';
+        } else if (results.every(r => r.symbol === results[0].symbol)) {
+            // Любые три одинаковых фрукта
+            multiplier = 10;
+            message = '✨ Три одинаковых символа!';
+            color = '#4CAF50';
+        } else {
+            // Проверяем пары
+            const symbols = results.map(r => r.symbol);
+            const uniqueSymbols = new Set(symbols);
+            
+            if (uniqueSymbols.size === 2) {
+                multiplier = 3;
+                message = '✨ Два одинаковых символа!';
+                color = '#2196F3';
+            }
+        }
+
+        if (multiplier > 0) {
+            const win = Math.floor(bet * multiplier);
+            score = Math.max(0, score + win);
+            updateDisplay();
+            showModal('Победа! 🎰', 
+                `<div style="font-size: 24px; margin-bottom: 15px;">${message}</div>
+                 <div style="color: ${color}; font-size: 32px; margin-bottom: 15px;">+${win.toFixed(2)} ₽</div>
+                 <div style="color: #4CAF50; font-size: 20px;">Множитель: x${multiplier}</div>`
+            );
+            } else {
+            showModal('Не повезло! 😢', 
+                `<div style="font-size: 20px; margin-bottom: 15px;">Попробуйте еще раз!</div>
+                 <div style="color: #f44336; font-size: 24px;">-${bet.toFixed(2)} ₽</div>`
+            );
+        }
+    }
+
+    // Ставки
+    function startBetting() {
+        document.getElementById('gameField').style.display = 'block';
+        document.getElementById('minesweeperGame').style.display = 'none';
+        document.getElementById('slotsGame').style.display = 'none';
+        document.getElementById('bettingGame').style.display = 'block';
+    }
+
+    function placeBet() {
+        const bet = validateBet(document.getElementById('betAmount').value);
+        if (!bet) return;
+
+        const multiplier = parseFloat(document.getElementById('betMultiplier').value);
+        
+        score = Math.max(0, score - bet);
+            updateDisplay();
+
+        const chance = (100 / multiplier) + 20;
+        const random = Math.random() * 100;
+
+        if (random <= chance) {
+            const win = Math.floor(bet * multiplier);
+            score = Math.max(0, score + win);
+            updateDisplay();
+            showModal('Победа!', `Вы выиграли ${win.toFixed(2)} ₽ (x${multiplier})!`);
+        } else {
+            showModal('Проигрыш!', 'Повезет в следующий раз!');
+        }
+    }
+
+    // Функция для обработки кликов по индикатору жижи
+    function handleLiquidClick() {
+        liquidClickCount++;
+        if (liquidClickCount >= 10) {
+            document.getElementById('secretChat').style.display = 'block';
+            liquidClickCount = 0; // Сбрасываем счетчик
+        }
+    }
+
+    // Функция для закрытия секретного чата
+    function closeSecretChat() {
+        document.getElementById('secretChat').style.display = 'none';
+        // Восстанавливаем обычный счет, если был использован чит
+        if (tempScore > 0) {
+            score = tempScore;
+            tempScore = 0;
+                updateDisplay();
+            }
+        }
+
+    // Функция для обработки команд
+    function handleSecretCommand(event) {
+        if (event.key === 'Enter') {
+            const command = document.getElementById('secretChatInput').value.toLowerCase();
+            
+            switch(command) {
+                case '/xf':
+                    const multiplier = 10000000;
+                    baseClickValue *= multiplier;
+                    showModal('ЭКСТРЕМАЛЬНЫЙ КЛИК!', `Множитель за клик x${multiplier} на 30 секунд!`);
+                    setTimeout(() => {
+                        baseClickValue /= multiplier;
+                        showModal('Экстремальный клик закончился', 'Ваш множитель за клик восстановлен.');
+                    }, 30000);
+                    break;
+
+                case '/levelup':
+                    exp += getRequiredExp(ratLevel);
+                    checkLevelUp();
+                    showModal('Level Up!', 'Вы получили достаточно опыта для нового уровня!');
+                    break;
+                
+                case '/clickmaster':
+                    baseClickValue *= 5;
+                    showModal('Мастер кликов!', 'Ваш клик временно усилен в 5 раз на 60 секунд!');
+                    setTimeout(() => {
+                        baseClickValue /= 5;
+                        showModal('Эффект "Мастер кликов" закончился', 'Ваш клик вернулся к обычному значению.');
+                    }, 60000);
+                    break;
+                
+                case '/coilpack':
+                    spareCoilCount += 5;
+                    updateInventoryDisplay();
+                    showModal('Набор картриджей!', 'Вы получили 5 запасных картриджей!');
+                    break;
+                    
+                case '/fontastic':
+                    document.body.style.fontFamily = "'Comic Sans MS', cursive, sans-serif";
+                    showModal('Шрифтастика!', 'Шрифт изменен на Comic Sans MS. Наслаждайтесь!');
+                    break;
+
+                case '/ratparty':
+                    const ratElement = document.getElementById('rat');
+                    ratElement.style.transition = 'background-color 0.5s, box-shadow 0.5s';
+                    ratElement.style.backgroundColor = 'gold';
+                    ratElement.style.boxShadow = '0 0 25px gold';
+                    showModal('Вечеринка у крысы!', 'Крыса теперь золотая!');
+                    break;
+
+                case '/pimpmyvape':
+                    document.body.style.background = 'linear-gradient(to right, #434343, #000000)';
+                    document.querySelectorAll('.market-window, .inventory-window, .modal, .casino-window').forEach(el => {
+                        el.style.background = '#222';
+                        el.style.boxShadow = '0 0 15px #ffc107';
+                    });
+                    document.querySelectorAll('button, .modal-button, .use-juice, .use-coil').forEach(el => {
+                        el.style.background = '#ffc107';
+                        el.style.color = '#000';
+                        el.style.border = '1px solid #000';
+                    });
+                    showModal('Стиль активирован!', 'Ваш вейп был прокачан!');
+                    break;
+
+                case '/vaporwave':
+                    document.body.style.background = 'linear-gradient(to right, #ff7e5f, #feb47b)';
+                    document.querySelectorAll('.market-window, .inventory-window, .modal, .casino-window').forEach(el => {
+                        el.style.background = 'rgba(0,0,0,0.7)';
+                        el.style.border = '1px solid #00d2ff';
+                    });
+                    document.querySelectorAll('button, .modal-button, .use-juice, .use-coil').forEach(el => {
+                        el.style.background = 'linear-gradient(to right, #00d2ff, #3a7bd5)';
+                        el.style.color = '#fff';
+                    });
+                    showModal('Стиль Vaporwave!', 'Вы погрузились в атмосферу ретро-футуризма!');
+                    break;
+
+                case '/goldrush':
+                    score += 5000;
+                    updateDisplay();
+                    showModal('Золотая лихорадка!', 'Вы получили 5000 ₽!');
+                    break;
+
+                case '/juicebox':
+                    inventoryJuice = maxInventoryJuice;
+                    updateJuiceLevel();
+                    showModal('Полный бак!', 'Ваш запас жижи пополнен!');
+                    break;
+
+                case '/ultracharge':
+                    battery = maxBattery * 1.5; // Временный буст
+                    maxBattery = maxBattery * 1.5;
+                    updateDisplay();
+                    showModal('Ультразаряд!', 'Батарея заряжена с временным усилением!');
+                    break;
+
+                case '/newgear':
+                    const devices = listings.filter(l => l.type === 'device');
+                    const randomDevice = devices[Math.floor(Math.random() * devices.length)];
+                    currentDevice = { name: randomDevice.title, image: randomDevice.image };
+                    maxBattery = randomDevice.specs.battery;
+                    battery = maxBattery;
+                    maxLiquid = randomDevice.specs.liquid;
+                    liquid = maxLiquid;
+                    document.getElementById('rat').style.backgroundImage = `url('${currentDevice.image}')`;
+                    updateDisplay();
+                    showModal('Новое устройство!', `Вы получили ${randomDevice.title}!`);
+                    break;
+
+                case '/ghostvape':
+                    document.getElementById('rat').style.background = 'transparent';
+                    document.getElementById('rat').style.boxShadow = '0 0 25px 5px #ffffff';
+                    baseClickValue *= 1.5;
+                    showModal('Призрачный вейп!', 'Вы получили призрачный вейп с бонусом к клику!');
+                    break;
+
+                case '/godcoil':
+                    coilHealth = Infinity;
+                    coilBurned = false;
+                    showModal('Божественный испаритель!', 'Ваш испаритель теперь неуязвим!');
+                    break;
+                    
+                case '/randomizer':
+                    const rewards = [
+                        () => { score += 1000; return '1000 ₽'; },
+                        () => { inventoryJuice += 10; updateJuiceLevel(); return '10 мл жижи'; },
+                        () => { ratLevel += 1; return '1 уровень'; },
+                        () => { score -= 500; return '-500 ₽... не повезло'; }
+                    ];
+                    const randomReward = rewards[Math.floor(Math.random() * rewards.length)];
+                    const rewardText = randomReward();
+                    updateDisplay();
+                    showModal('Случайная награда!', `Вы получили: ${rewardText}`);
+                    break;
+
+                case '/xq':
+                    // Сохраняем текущий счет
+                    tempScore = score;
+                    // Устанавливаем временный бонус
+                    score = 100000;
+                    updateDisplay();
+                    showModal('Чит активирован!', 
+                        '<p style="font-size: 18px; margin-bottom: 20px;">Получено 100,000₽!</p>' +
+                        '<p style="color: #f44336;">Бонус пропадет после перезагрузки</p>'
+                    );
+                    break;
+
+                case '/xd':
+                    // Сброс всех данных
+                    localStorage.clear();
+                    showModal('Данные удалены!', 
+                        '<p style="font-size: 18px; margin-bottom: 20px;">Все данные стерты!</p>' +
+                        '<p style="color: #f44336;">Страница будет перезагружена</p>'
+                    );
+                    setTimeout(() => location.reload(), 2000);
+                    break;
+
+                case '/xm':
+                    // Максимальные характеристики
+                    maxBattery = 5000;
+                    battery = maxBattery;
+                    maxLiquid = 10.0;
+                    liquid = maxLiquid;
+                    ratLevel = 99;
+                    exp = 0;
+                    updateDisplay();
+                    showModal('Максимальные характеристики!', 
+                        '<p style="font-size: 18px;">Получены максимальные характеристики:</p>' +
+                        '<p style="color: #4CAF50;">Батарея: 5000 mAh</p>' +
+                        '<p style="color: #2196F3;">Бак: 10.0 мл</p>' +
+                        '<p style="color: #FFC107;">Уровень: 99</p>'
+                    );
+                    break;
+
+                case '/xh':
+                    // Показать список команд
+                    showModal('Список чит-кодов', 
+                        '<div style="font-size: 16px; text-align: left;">' +
+                        '<p><code style="color: #4CAF50;">/xq</code> - Получить 100,000₽ (временно)</p>' +
+                        '<p><code style="color: #f44336;">/xd</code> - Стереть все данные</p>' +
+                        '<p><code style="color: #2196F3;">/xm</code> - Максимальные характеристики</p>' +
+                        '<p><code style="color: #FFC107;">/xh</code> - Показать эту подсказку</p>' +
+                        '<p><code style="color: #9C27B0;">/xs</code> - Бесконечные ресурсы</p>' +
+                        '<hr>' +
+                        '<p><code style="color: #ffc107;">/pimpmyvape</code> - "Прокачанный" стиль</p>' +
+                        '<p><code style="color: #00d2ff;">/vaporwave</code> - Стиль Vaporwave</p>' +
+                        '<p><code style="color: #E91E63;">/goldrush</code> - Получить 5000 ₽</p>' +
+                        '<p><code style="color: #4CAF50;">/juicebox</code> - Пополнить запас жижи</p>' +
+                        '<p><code style="color: #FF9800;">/ultracharge</code> - Ультразаряд батареи</p>' +
+                        '<p><code style="color: #8BC34A;">/newgear</code> - Случайное новое устройство</p>' +
+                        '<p><code style="color: #FFFFFF;">/ghostvape</code> - Призрачный вейп</p>' +
+                        '<p><code style="color: #FFEB3B;">/godcoil</code> - Неуязвимый испаритель</p>' +
+                        '<p><code style="color: #9E9E9E;">/randomizer</code> - Случайная награда</p>' +
+                        '<hr>' +
+                        '<p><code style="color: #673AB7;">/levelup</code> - Поднять уровень</p>' +
+                        '<p><code style="color: #E91E63;">/clickmaster</code> - Временный множитель клика</p>' +
+                        '<p><code style="color: #00BCD4;">/coilpack</code> - Получить 5 картриджей</p>' +
+                        '<p><code style="color: #8BC34A;">/fontastic</code> - Изменить шрифт</p>' +
+                        '<p><code style="color: #FFC107;">/ratparty</code> - Золотая крыса</p>' +
+                        '<p><code style="color: #ff4500;">/xf</code> - Экстремальный клик (x10,000,000) на 30 сек</p>' +
+                        '</div>'
+                    );
+                    break;
+
+                case '/xs':
+                    // Бесконечные ресурсы и максимальный уровень
+                    maxBattery = 100000000;
+                    battery = maxBattery;
+                    maxLiquid = 10000;
+                    liquid = maxLiquid;
+                    maxInventoryJuice = 10000;
+                    inventoryJuice = maxInventoryJuice;
+                    // Добавляем множитель тапа
+                    baseClickValue = baseClickValue * 1000;
+                    // Устанавливаем максимальный уровень
+                    ratLevel = 100000;
+                    exp = 0;
+                    // Делаем испаритель неуязвимым
+                    coilHealth = Infinity;
+                    coilBurned = false;
+                    dryHitCount = 0;
+                    // Даем запасной картридж
+                    spareCoilCount = 999;
+                    // Обновляем кнопку запасного картриджа
+                    const spareCoilButton = document.getElementById('spareCoilButton');
+                    if (spareCoilButton) {
+                        spareCoilButton.classList.remove('disabled');
+                    }
+                    
+                    // Делаем 100% выигрыш в казино
+                    // Модифицируем функцию placeBet для гарантированного выигрыша
+                    window.originalPlaceBet = window.originalPlaceBet || window.placeBet;
+                    window.placeBet = function() {
+                        const bet = validateBet(document.getElementById('betAmount').value);
+                        if (!bet) return;
+                        const multiplier = parseFloat(document.getElementById('betMultiplier').value);
+                        score = Math.max(0, score - bet);
+                        updateDisplay();
+                        // Гарантированный выигрыш с тройным множителем
+                        const win = Math.floor(bet * multiplier * 3);
+                        score = Math.max(0, score + win);
+                        updateDisplay();
+                        showModal('МЕГА ПОБЕДА! 🎰', 
+                            `<div style="font-size: 24px; margin-bottom: 15px;">🎉 ГАРАНТИРОВАННЫЙ ВЫИГРЫШ!</div>
+                             <div style="color: #FFD700; font-size: 32px; margin-bottom: 15px;">+${win.toFixed(2)} ₽</div>
+                             <div style="color: #4CAF50; font-size: 20px;">Супер множитель: x${multiplier * 3}</div>`
+                        );
+                    };
+
+                    // Модифицируем функцию spinSlots для гарантированного джекпота
+                    window.originalSpinSlots = window.originalSpinSlots || window.spinSlots;
+                    window.spinSlots = function() {
+                        const bet = validateBet(document.getElementById('slotsBet').value);
+                        if (!bet) return;
+                        score = Math.max(0, score - bet);
+                        updateDisplay();
+                        // Всегда джекпот с тройным множителем
+                        const win = Math.floor(bet * 77 * 3);
+                        score = Math.max(0, score + win);
+                        updateDisplay();
+                        showModal('СУПЕР ДЖЕКПОТ! 🎰', 
+                            `<div style="font-size: 24px; margin-bottom: 15px;">🎉 ГАРАНТИРОВАННЫЙ ДЖЕКПОТ!</div>
+                             <div style="color: #FFD700; font-size: 32px; margin-bottom: 15px;">+${win.toFixed(2)} ₽</div>
+                             <div style="color: #4CAF50; font-size: 20px;">Множитель: x${77 * 3}</div>`
+                        );
+                    };
+
+                    // Модифицируем функцию checkMinesWin для гарантированного выигрыша в сапёре
+                    window.originalCheckCell = window.checkCell;
+                    window.checkCell = function(index, cell, mines, bet) {
+                        if (!gameActive || cell.classList.contains('safe') || cell.classList.contains('mine')) return;
+                        
+                        // Всегда безопасная ячейка
+                        cell.classList.add('safe');
+                        cell.innerHTML = '<i class="fas fa-check"></i>';
+                        safeClicks++;
+                        
+                        // Увеличенный множитель
+                        const baseMultiplier = currentMines * 0.2; // Удвоенный базовый множитель
+                        const totalMultiplier = baseMultiplier * safeClicks * 2; // Дополнительное удвоение
+                        
+                        document.getElementById('currentMultiplier').textContent = totalMultiplier.toFixed(1) + 'x';
+                        const potentialWin = currentBet + (currentBet * totalMultiplier);
+                        document.getElementById('potentialWin').textContent = potentialWin.toFixed(2) + ' ₽';
+                        document.querySelector('.collect-button').disabled = false;
+                    };
+
+                    updateDisplay();
+                    updateJuiceLevel();
+                    showModal('Максимальная мощность!', 
+                        '<p style="font-size: 18px;">Получены бесконечные ресурсы:</p>' +
+                        '<p style="color: #4CAF50;">Батарея: 100,000,000 mAh</p>' +
+                        '<p style="color: #2196F3;">Бак: 10,000 мл</p>' +
+                        '<p style="color: #9C27B0;">Флакон: 10,000 мл</p>' +
+                        '<p style="color: #FF9800;">Множитель тапа: x1000</p>' +
+                        '<p style="color: #E91E63;">Уровень: 100,000</p>' +
+                        '<p style="color: #8BC34A;">Неуязвимый испаритель</p>' +
+                        '<p style="color: #FFD700;">✨ ЧИТЕРСКОЕ КАЗИНО:</p>' +
+                        '<p style="color: #FF5722;">• Гарантированные выигрыши</p>' +
+                        '<p style="color: #FF5722;">• Тройные множители</p>' +
+                        '<p style="color: #FF5722;">• Всегда джекпот в слотах</p>' +
+                        '<p style="color: #FF5722;">• Безопасный сапёр</p>'
+                    );
+                    break;
+            }
+            
+            // Закрываем чат после использования команды (кроме /xh)
+            if (command !== '/xh') {
+                closeSecretChat();
+            }
+            
+            document.getElementById('secretChatInput').value = '';
+        }
+    }
+
+    // Добавляем обработчик клика на индикатор жижи
+    document.querySelector('.liquid-bar-container').addEventListener('click', handleLiquidClick);
+
+    // Функция для обновления отображения аксессуаров
+    function updateAccessoriesDisplay() {
+        // Обновляем статус расширенного бака
+        const liquidStatus = document.getElementById('liquidAccessoryStatus');
+        if (liquidStatus) {
+            if (installedAccessories.liquid) {
+                liquidStatus.textContent = `Установлен: ${maxLiquid} мл`;
+                liquidStatus.style.color = '#4CAF50';
+                document.getElementById('liquidAccessory').classList.add('installed');
+            } else {
+                liquidStatus.textContent = 'Не установлен';
+                liquidStatus.style.color = '#999';
+                document.getElementById('liquidAccessory').classList.remove('installed');
+            }
+        }
+
+        // Обновляем статус аккумуляторов
+        const batteryStatus = document.getElementById('batteryAccessoryStatus');
+        if (batteryStatus) {
+            if (installedAccessories.battery) {
+                batteryStatus.textContent = `Установлены: ${maxBattery} mAh`;
+                batteryStatus.style.color = '#4CAF50';
+                document.getElementById('batteryAccessory').classList.add('installed');
+            } else {
+                batteryStatus.textContent = 'Не установлены';
+                batteryStatus.style.color = '#999';
+                document.getElementById('batteryAccessory').classList.remove('installed');
+            }
+        }
+    }
+
+    function updateInventoryDisplay() {
+        // Обновляем количество запасных картриджей
+        const spareCoilCountElement = document.getElementById('spareCoilCount');
+        if (spareCoilCountElement) {
+            spareCoilCountElement.textContent = spareCoilCount;
+        }
+
+        const spareCoilButton = document.getElementById('spareCoilButton');
+        if (spareCoilButton) {
+            if (spareCoilCount > 0) {
+                spareCoilButton.classList.remove('disabled');
+            } else {
+                spareCoilButton.classList.add('disabled');
+            }
+        }
+
+        updateJuiceLevel();
+        updateAccessoriesDisplay();
+    }
+    </script>
+</body>
+</html>
